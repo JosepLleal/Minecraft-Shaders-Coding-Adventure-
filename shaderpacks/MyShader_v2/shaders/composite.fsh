@@ -16,8 +16,12 @@ const int colortex1Format = RGB16;
 const int colortex2Format = RGB16;
 */
 
-const float sunPathRotation = -40.0f;
+//const float sunPathRotation = -40.0f;
 const float Ambient = 0.33f;
+
+const vec3 TorchColor = vec3(1.0f, 0.85f, 0.6f);
+//const vec3 SkyColor = vec3(0.73f, 0.81f, 0.92f);
+const vec3 SkyColor = vec3(0.7f, 0.7f, 0.8f);
 
 float AdjustLightmapTorch(in float torch) {
     const float K = 3.0f;
@@ -26,7 +30,7 @@ float AdjustLightmapTorch(in float torch) {
 }
 
 float AdjustLightmapSky(in float sky, in float N) {
-    float NewSky = pow(sky, N);
+    float NewSky = 1.5 * pow(sky, N);
     return NewSky;
 }
 
@@ -46,14 +50,16 @@ void main(){
     //Get Lightmap
     vec2 Lightmap = texture2D(colortex2, TexCoords).rg;
     Lightmap = AdjustLightmap(Lightmap);
+    //light color to block
+    Albedo *= TorchColor*Lightmap.r + SkyColor*Lightmap.g;
 
-    // Compute cos theta between the normal and sun directions
+    // Compute cos theta between the normal and sun directions 
     float NdotL = max(dot(Normal, normalize(sunPosition)), 0.0f);
-    // Do the lighting calculations
+    // Do the lighting calculations, Lambert Diffuse
     vec3 Diffuse = Albedo * (NdotL + Ambient);
 
     /* DRAWBUFFERS:0 */
     // Finally write the diffuse color
-    //gl_FragData[0] = vec4(Diffuse, 1.0f);
-    gl_FragData[0] = vec4(Lightmap, 0.0f, 1.0f);
+    gl_FragData[0] = vec4(Diffuse, 1.0f);
+    //gl_FragData[0] = vec4(Lightmap, 0.0f, 1.0f);
 }
