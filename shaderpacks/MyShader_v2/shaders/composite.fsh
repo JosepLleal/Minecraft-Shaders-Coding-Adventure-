@@ -8,12 +8,23 @@ uniform vec3 sunPosition;
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
 uniform sampler2D colortex2;
+uniform sampler2D depthtex0;
+uniform sampler2D shadowtex0;
+
+//Unifrom matrices
+uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferModelViewInverse;
+uniform mat4 shadowModelView;
+uniform mat4 shadowProjection;
 
 /*
 const int colortex0Format = RGBA16;
 const int colortex1Format = RGB16;
 const int colortex2Format = RGB16;
 */
+
+const int shadowMapResolution = 1024;
+const float shadowBias = 0.001f;
 
 const float sunPathRotation = -20.0f;
 const float Ambient = 0.1f;
@@ -46,6 +57,20 @@ vec3 DetermineLightColor(in vec2 lightmap) {
     return skyColor + torchColor;
 }
 
+//------SHADOWS---------
+float GetShadow(void){
+    vec3 ClipSpace = vec3(TexCoords, texture2D(depthtex0, TexCoords).r) * 2.0f - 1.0f;
+    //convert from clip space to view scpace
+    vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
+    vec3 View = ViewW.xyz / ViewW.w;
+    //convert from view space to world space (actually player space)
+    vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
+    //convert to shadow space
+    vec4 ShadowSpace = shadowProjection * shadowModelView * World;
+    vec3 SampleCoords = ShadowSpace.xyz * 0.5f + 0.5f;
+
+    return step(SampleCoords.z - shadowBias, texture2D(shadowtex0, SampleCoords.xy).r);
+}
 
 void main(){
     // Account for gamma correction
@@ -66,10 +91,10 @@ void main(){
     // Compute cos theta between the normal and sun directions 
     float NdotL = max(dot(Normal, normalize(sunPosition)), 0.0f);
     // Do the lighting calculations, Lambert Diffuse
-    vec3 Diffuse = Albedo * (LightmapColor + NdotL + Ambient);
+    vec3 Diffuse = Albedo * (LightmapColor + NdotL + GetShadow() + Ambient);
     
     //shading using lightmap
-    Diffuse*=clamp(Lightmap.g + Lightmap.r, 0.0f, 1.0f);
+    Diffuse *= Lightmap.g + Lightmap.r;
 
     /* DRAWBUFFERS:0 */
     // Finally write the diffuse color
