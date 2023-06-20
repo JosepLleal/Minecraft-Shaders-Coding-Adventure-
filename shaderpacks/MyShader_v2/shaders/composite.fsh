@@ -27,7 +27,7 @@ const int colortex2Format = RGB16;
 const int shadowMapResolution = 2048;
 const float shadowBias = 0.001f;
 
-const float sunPathRotation = -20.0f;
+const float sunPathRotation = -40.0f;
 const float Ambient = 0.1f;
 
 const vec3 TorchColor = vec3(1.0f, 0.35f, 0.28f);
@@ -68,6 +68,9 @@ float GetShadow(float depth){
     vec4 World = gbufferModelViewInverse * vec4(View, 1.0f);
     //convert to shadow space
     vec4 ShadowSpace = shadowProjection * shadowModelView * World;
+    //distort shadows
+    ShadowSpace.xy = DistortPosition(ShadowSpace.xy);
+    //get [0,1] range
     vec3 SampleCoords = ShadowSpace.xyz * 0.5f + 0.5f;
 
     return step(SampleCoords.z - shadowBias, texture2D(shadowtex0, SampleCoords.xy).r);
