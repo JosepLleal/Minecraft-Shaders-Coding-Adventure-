@@ -4,7 +4,7 @@ varying vec2 TexCoords;
 
 uniform sampler2D colortex0;
 
-const float gamma = 1.2f;
+const float gamma = 2.2f;
 
 void main() {
 
