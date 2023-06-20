@@ -16,7 +16,6 @@ const int colortex2Format = RGB16;
 */
 
 const float sunPathRotation = -20.0f;
-const int shadowMapResolution = 1024;
 const float Ambient = 0.1f;
 
 const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
