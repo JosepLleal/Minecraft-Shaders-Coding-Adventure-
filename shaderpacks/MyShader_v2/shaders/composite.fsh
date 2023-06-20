@@ -23,7 +23,7 @@ const int colortex1Format = RGB16;
 const int colortex2Format = RGB16;
 */
 
-const int shadowMapResolution = 1024;
+const int shadowMapResolution = 2048;
 const float shadowBias = 0.001f;
 
 const float sunPathRotation = -20.0f;
@@ -58,8 +58,8 @@ vec3 DetermineLightColor(in vec2 lightmap) {
 }
 
 //------SHADOWS---------
-float GetShadow(void){
-    vec3 ClipSpace = vec3(TexCoords, texture2D(depthtex0, TexCoords).r) * 2.0f - 1.0f;
+float GetShadow(float depth){
+    vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
     //convert from clip space to view scpace
     vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
     vec3 View = ViewW.xyz / ViewW.w;
@@ -98,7 +98,8 @@ void main(){
     // Compute cos theta between the normal and sun directions 
     float NdotL = max(dot(Normal, normalize(sunPosition)), 0.0f);
     // Do the lighting calculations, Lambert Diffuse
-    vec3 Diffuse = Albedo * (LightmapColor + NdotL + GetShadow() + Ambient);
+    //vec3 Diffuse = Albedo * (LightmapColor + NdotL + Ambient);
+    vec3 Diffuse = Albedo * (LightmapColor + NdotL + GetShadow(Depth) + Ambient);
     
     //shading using lightmap
     Diffuse *= Lightmap.g + Lightmap.r;
