@@ -1,4 +1,5 @@
 #version 120
+#include "distort.glsl"
 
 varying vec2 TexCoords;
 uniform vec3 sunPosition;
