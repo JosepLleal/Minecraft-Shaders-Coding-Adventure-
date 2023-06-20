@@ -29,7 +29,7 @@ const float shadowBias = 0.001f;
 const float sunPathRotation = -20.0f;
 const float Ambient = 0.1f;
 
-const vec3 TorchColor = vec3(1.0f, 0.25f, 0.08f);
+const vec3 TorchColor = vec3(1.0f, 0.35f, 0.28f);
 const vec3 skyColor = vec3(0.05f, 0.15f, 0.3f);
 
 float AdjustLightmapTorch(in float torch) {
@@ -76,6 +76,13 @@ void main(){
     // Account for gamma correction
     vec3 Albedo = texture2D(colortex0, TexCoords).rgb;
     Albedo = pow(Albedo, vec3(2.2f));//gamma correct
+
+    //sky correction
+    float Depth = texture2D(depthtex0, TexCoords).r;
+    if(Depth == 1.0f){
+        gl_FragData[0] = vec4(Albedo, 1.0f);
+    return;
+    }
 
     // Get the normal
     vec3 Normal = texture2D(colortex1, TexCoords).rgb;
