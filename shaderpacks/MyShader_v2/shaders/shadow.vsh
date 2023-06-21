@@ -7,6 +7,6 @@ varying vec4 Color;
 void main(){
     gl_Position = ftransform();
     gl_Position.xy = DistortPosition(gl_Position.xy);
-    TexCoords = gl_MultiTexCoord0.st;
+    TexCoords = gl_MultiTexCoord0.xy;
     Color = gl_Color;
 }
