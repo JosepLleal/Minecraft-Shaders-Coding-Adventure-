@@ -9,14 +9,18 @@ uniform vec3 sunPosition;
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
 uniform sampler2D colortex2;
-uniform sampler2D depthtex0;
-uniform sampler2D shadowtex0;
 
 //Unifrom matrices
 uniform mat4 gbufferProjectionInverse;
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 shadowModelView;
 uniform mat4 shadowProjection;
+
+//shadow uniforms
+uniform sampler2D depthtex0;
+uniform sampler2D shadowtex0;
+uniform sampler2D shadowtex1;
+uniform sampler2D shadowcolor0;
 
 /*
 const int colortex0Format = RGBA16;
@@ -27,8 +31,8 @@ const int colortex2Format = RGB16;
 const int shadowMapResolution = 2048;
 const float shadowBias = 0.001f;
 
-const float sunPathRotation = -40.0f;
-const float Ambient = 0.1f;
+//const float sunPathRotation = -40.0f;
+const float Ambient = 0.1;
 
 const vec3 TorchColor = vec3(1.0f, 0.35f, 0.28f);
 const vec3 skyColor = vec3(0.05f, 0.15f, 0.3f);
@@ -59,7 +63,25 @@ vec3 DetermineLightColor(in vec2 lightmap) {
 }
 
 //------SHADOWS---------
-float GetShadow(float depth){
+float Visibility(in sampler2D ShadowMap, in vec3 uv) {
+    return step(uv.z - shadowBias, texture2D(ShadowMap, uv.xy).r);
+}
+
+vec3 ColorShadows(in vec3 uv){
+    //sample shadow visibility depth textures
+    float ShadowVisibility0 = Visibility(shadowtex0, uv);
+    //does not contain transparent objects
+    float ShadowVisibility1 = Visibility(shadowtex1, uv);
+
+    //sample block color
+    vec4 ShadowColor0 = texture2D(shadowcolor0, uv.xy);
+    vec3 TransmitedColor = ShadowColor0.rgb;
+    
+    //interpolate using ShadowVisibility0
+    return mix(TransmitedColor * ShadowVisibility1, vec3(1.0f), ShadowVisibility0);
+}
+
+vec3 GetShadow(float depth){
     vec3 ClipSpace = vec3(TexCoords, depth) * 2.0f - 1.0f;
     //convert from clip space to view scpace
     vec4 ViewW = gbufferProjectionInverse * vec4(ClipSpace, 1.0f);
@@ -71,9 +93,10 @@ float GetShadow(float depth){
     //distort shadows
     ShadowSpace.xy = DistortPosition(ShadowSpace.xy);
     //get [0,1] range
-    vec3 SampleCoords = ShadowSpace.xyz * 0.5f + 0.5f;
+    vec3 uv = ShadowSpace.xyz * 0.5f + 0.5f;
 
-    return step(SampleCoords.z - shadowBias, texture2D(shadowtex0, SampleCoords.xy).r);
+    return ColorShadows(uv);
+    //return step(uv.z - shadowBias, texture2D(shadowtex1, uv.xy).r);
 }
 
 void main(){
