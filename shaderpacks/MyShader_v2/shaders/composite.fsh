@@ -21,6 +21,7 @@ uniform sampler2D depthtex0;
 uniform sampler2D shadowtex0;
 uniform sampler2D shadowtex1;
 uniform sampler2D shadowcolor0;
+uniform sampler2D noisetex;
 
 /*
 const int colortex0Format = RGBA16;
@@ -29,10 +30,15 @@ const int colortex2Format = RGB16;
 */
 
 const int shadowMapResolution = 2048;
+const int noiseTextureResolution = 128;
 const float shadowBias = 0.001f;
 float ShadowVisibility1;
 
-const float sunPathRotation = -40.0f;
+#define SHADOW_SAMPLES 2
+const int shadowSamplesPerSize = 2 * SHADOW_SAMPLES + 1;
+
+
+const float sunPathRotation = -10.0f;
 const float Ambient = 0.1f;
 
 const vec3 TorchColor = vec3(1.0f, 0.35f, 0.28f);
@@ -41,7 +47,7 @@ vec2 Lightmap;
 
 float AdjustLightmapTorch(in float torch) {
     const float K = 2.5f; //intensity
-    const float N = 4.0f; //scatter
+    const float N = 2.0f; //scatter
     return K * pow(torch, N);
 }
 
@@ -76,7 +82,7 @@ vec3 ColorShadows(in vec3 uv){
     ShadowVisibility1 = Visibility(shadowtex1, uv);
 
     //sample block color
-    float Intensity = 3.0f; //shadow color intensity
+    float Intensity = 4.0f; //shadow color intensity
     vec4 ShadowColor0 = texture2D(shadowcolor0, uv.xy);
     vec3 TransmitedColor = ShadowColor0.rgb;
     
@@ -98,7 +104,23 @@ vec3 GetShadow(in float depth){
     //get [0,1] range
     vec3 uv = ShadowSpace.xyz * 0.5f + 0.5f;
 
-    return ColorShadows(uv);
+    //Soft shadow Percentage Close Filtering
+    vec3 shadowAccum = vec3(0.0f);
+
+    float angle = texture2D(noisetex, TexCoords * 20.0f).r * 100.0f;
+    float cosTheta = cos(angle);
+    float sinTheta = sin(angle);
+    mat2 rot = mat2(cosTheta, -sinTheta, sinTheta, cosTheta)/shadowMapResolution;
+
+    for(int x = -SHADOW_SAMPLES; x <= SHADOW_SAMPLES; x++){
+        for(int y = -SHADOW_SAMPLES; y <= SHADOW_SAMPLES; y++){
+            vec2 offset = rot * vec2(x, y);
+            vec3 currentSampleCoord = vec3(uv.xy + offset, uv.z);
+            shadowAccum += ColorShadows(currentSampleCoord);
+        }
+    }
+
+    return shadowAccum/= pow(shadowSamplesPerSize, 2.0f);
 }
 
 void main(){
