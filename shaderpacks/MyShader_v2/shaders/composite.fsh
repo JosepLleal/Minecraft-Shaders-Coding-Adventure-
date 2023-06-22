@@ -1,5 +1,6 @@
 #version 120
 #include "distort.glsl"
+#include "common.glsl"
 
 varying vec2 TexCoords;
 
@@ -38,16 +39,20 @@ float ShadowVisibility1;
 const int shadowSamplesPerSize = 2 * SHADOW_SAMPLES + 1;
 
 
-const float sunPathRotation = -10.0f;
-const float Ambient = 0.1f;
+const float sunPathRotation = -30.0f;
+const float Ambient = 0.01f;
 
 const vec3 TorchColor = vec3(1.0f, 0.35f, 0.28f);
 const vec3 skyColor = vec3(0.05f, 0.15f, 0.3f);
 vec2 Lightmap;
 
+float brightness = 0.23f;
+float contrast = 1.4f;
+float saturation = 1.4f;
+
 float AdjustLightmapTorch(in float torch) {
     const float K = 2.5f; //intensity
-    const float N = 2.0f; //scatter
+    const float N = 4.0f; //scatter
     return K * pow(torch, N);
 }
 
@@ -82,12 +87,11 @@ vec3 ColorShadows(in vec3 uv){
     ShadowVisibility1 = Visibility(shadowtex1, uv);
 
     //sample block color
-    float Intensity = 4.0f; //shadow color intensity
     vec4 ShadowColor0 = texture2D(shadowcolor0, uv.xy);
     vec3 TransmitedColor = ShadowColor0.rgb;
     
     //interpolate using ShadowVisibility0
-    return mix(TransmitedColor * Intensity * ShadowVisibility1, vec3(1.0f), ShadowVisibility0);
+    return mix(TransmitedColor * ShadowVisibility1, vec3(1.0f), ShadowVisibility0);
 }
 
 vec3 GetShadow(in float depth){
@@ -127,6 +131,9 @@ void main(){
     // Account for gamma correction
     vec3 Albedo = texture2D(colortex0, TexCoords).rgb;
     Albedo = pow(Albedo, vec3(2.2f));//gamma correct
+    Albedo = contrast * (Albedo - 0.5f) + 0.5f + brightness; 
+    //saturation
+    Albedo = mix(vec3(luminance(Albedo)), Albedo, saturation);
 
     //sky correction
     float Depth = texture2D(depthtex0, TexCoords).r;
@@ -150,7 +157,6 @@ void main(){
     // Compute cos theta between the normal and sun directions 
     float NdotL = max(dot(Normal, normalize(sunPosition)), 0.0f);
     // Do the lighting calculations, Lambert Diffuse
-    //vec3 Diffuse = Albedo * (LightmapColor + NdotL + Ambient);
     vec3 Diffuse = Albedo * (LightmapColor + NdotL * GetShadow(Depth) + Ambient);
     //shading using lightmap
     Diffuse *= Lightmap.g + Lightmap.r;
