@@ -7,8 +7,8 @@ uniform sampler2D colortex0;
 uniform float viewWidth, viewHeight;
 vec2 pixelSize = vec2(1.0/viewWidth, 1.0/viewHeight);
 
-const int KERNEL_SIZE = 32;
-const float sigma = 8.0;
+const int KERNEL_SIZE = 16;
+const float sigma = 5.0;
 
 void main(){
 

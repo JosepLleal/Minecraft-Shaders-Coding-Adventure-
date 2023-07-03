@@ -47,8 +47,8 @@ const vec3 skyColor = vec3(0.05f, 0.15f, 0.3f);
 vec2 Lightmap;
 
 float brightness = 0.4f;
-float contrast = 1.1f;
-float saturation = 1.5f;
+float contrast = 1.0f;
+float saturation = 1.1f;
 
 float AdjustLightmapTorch(in float torch) {
     const float K = 2.0f; //intensity
@@ -130,10 +130,10 @@ vec3 GetShadow(in float depth){
 void main(){
     // Account for gamma correction
     vec3 Albedo = texture2D(colortex0, TexCoords).rgb;
-    Albedo = pow(Albedo, vec3(1.7f));//gamma correct
+    Albedo = pow(Albedo, vec3(2.2f));//gamma correct
     //Albedo = contrast * (Albedo - 0.5f) + 0.5f + brightness; 
     vec3 Albedo2 = contrast * (Albedo - 0.5f) + 0.5f + brightness; 
-    Albedo = mix(Albedo, Albedo2, luminance(Albedo));
+    //Albedo = mix(Albedo, Albedo2, luminance(Albedo));
 
     //saturation
     Albedo = mix(vec3(luminance(Albedo)), Albedo, saturation);

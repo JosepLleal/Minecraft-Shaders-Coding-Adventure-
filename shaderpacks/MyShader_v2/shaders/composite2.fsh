@@ -8,7 +8,7 @@ uniform float near, far;
 
 uniform vec3 skyColor;  
 
-const float fogDensity = 1.5f;
+const float fogDensity = 1.1f;
 
 //from unity Z buffer to linear 0..1 depth (0 at eye, 1 at far plane)
 float LinearDepth(float z) {
@@ -21,16 +21,14 @@ void main() {
 
     float Depth = texture2D(depthtex0, TexCoords).r;
     Depth = LinearDepth(Depth);
-    Depth = Depth*Depth * fogDensity;
+    Depth = Depth*Depth*Depth* fogDensity;
     Depth = clamp(Depth, 0, 1);
     
     //dont tint the sun
     if (Depth > 0.99999f){
         gl_FragColor = vec4(albedo, 1.0f);
         return;
-    }
-
-    
+    }   
 
     vec3 finalColor = mix(albedo, skyColor, Depth);
 
